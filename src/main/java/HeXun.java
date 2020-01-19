@@ -39,53 +39,62 @@ public class HeXun {
                         stockVo.setHigh(Float.valueOf(details[3]));
                         stockVo.setLow(Float.valueOf(details[4]));
                         list.add(stockVo);
-                        System.out.println();
                     }
 
                 }
             }
             int count = 0;
             double amount = 100000;
-            //首日买600股
-            count += 600;
+            //首日买1000股
+            count += 2000;
+            int buyCount = 200;
+            int sellCount = 200;
             double buyPrice = (list.get(0).getHigh() - list.get(0).getLow()) * 0.1 + list.get(0).getLow();
-            amount -= (buyPrice * 600 + 10);
-            float sellFactor = 1.05f;
-            float buyFactor = 0.96f;
+            amount -= (buyPrice * count + 10);
+            float sellFactor = 0.9f;
+            float buyFactor = 0.9f;
+            int netPrice = 35;
             LocalDate lastBuyDay = null;
             LocalDate lastSellDay = null;
 
             DecimalFormat df = new DecimalFormat("#.00");
-            System.out.println(list.get(0).getDate() + "以" + df.format(buyPrice) + "买入600股,当前持股" + count + ",当前现金" + df.format(amount)
+            System.out.println(list.get(0).getDate() + "以" + df.format(buyPrice) + "买入1000股,当前持股" + count + ",当前现金" + df.format(amount)
                     + ",当前总价值" + df.format(amount + list.get(0).getClose() * count));
             for (int i = 1; i < list.size(); i++) {
-                //最高比昨日收盘高4%
                 LocalDate curDay = LocalDate.parse(list.get(i).getDate(), DateTimeFormatter.ofPattern("yyMMdd"));
-                if (lastSellDay != null && curDay.toEpochDay() - lastSellDay.toEpochDay() < 2) {
-                    continue;
-                }
-                if (list.get(i).getHigh() / list.get(i - 1).getClose() > sellFactor && count >= 200) {
+//                if (lastSellDay != null && curDay.toEpochDay() - lastSellDay.toEpochDay() < 2) {
+//                    continue;
+//                }
+                System.out.println(list.get(i).getDate() + "开盘" + list.get(i).getOpen() + "最高" + list.get(i).getHigh() +"最低" + list.get(i).getLow()
+                        + ",收盘" + list.get(i).getClose());
+                if (list.get(i).getHigh() > netPrice + 5 && count >= sellCount) {
                     //判断是否有股票卖
-                    count -= 200;
-                    double sellPrice = list.get(i - 1).getClose() * (sellFactor - 0.05);
-                    amount += (sellPrice * 200 - 10);
-                    System.out.println(list.get(i).getDate() + "以" + df.format(sellPrice) + "卖出200股,当前持股" + count + ",当前现金" + df.format(amount)
+                    count -= sellCount;
+                    double sellPrice = (list.get(i).getHigh() - list.get(i - 1).getClose()) * (sellFactor) + list.get(i - 1).getClose();
+                    amount += (sellPrice * sellCount - 10);
+
+                    System.out.println(list.get(i).getDate() + "以" + df.format(sellPrice) + "卖出" + sellCount +"股,当前持股" + count + ",当前现金" + df.format(amount)
                             + ",当前总价值" + df.format(amount + list.get(i).getClose() * count));
-                    lastSellDay = curDay;
-                }//最低比昨日低4%
-                else if (list.get(i).getLow() / list.get(i - 1).getClose() < buyFactor) {
-                    curDay = LocalDate.parse(list.get(i).getDate(), DateTimeFormatter.ofPattern("yyMMdd"));
-                    if (lastBuyDay != null && curDay.toEpochDay() - lastBuyDay.toEpochDay() < 2) {
-                        continue;
+                    netPrice += 5;
+                    sellCount += 100;
+                    if(buyCount > 100){
+                        buyCount -= 100;
                     }
+                } else if (list.get(i).getLow() < netPrice - 5
+                        && amount >= (list.get(i - 1).getClose() - (list.get(i - 1).getClose() - list.get(i).getLow()) * buyFactor) * buyCount) {
+                    buyPrice = list.get(i - 1).getClose() - (list.get(i - 1).getClose() - list.get(i).getLow()) * buyFactor;
                     //判断是否有钱买
-                    if (amount >= list.get(i - 1).getClose() * (buyFactor + 0.05) * 200 + 10) {
-                        count += 200;
-                        buyPrice = list.get(i - 1).getClose() * (buyFactor + 0.05);
-                        amount -= (buyPrice * 200 + 10);
-                        System.out.println(list.get(i).getDate() + "以" + df.format(buyPrice) + "买入200股,当前持股" + count + ",当前现金" + df.format(amount)
+                    if (amount >= buyPrice * buyCount + 10) {
+                        count += buyCount;
+                        amount -= (buyPrice * buyCount + 10);
+                        System.out.println(list.get(i).getDate() + "以" + df.format(buyPrice) + "买入" + buyCount + "股,当前持股" + count + ",当前现金" + df.format(amount)
                                 + ",当前总价值" + df.format(amount + list.get(i).getClose() * count));
-                        lastBuyDay = curDay;
+                        netPrice -= 5;
+                        if(sellCount > 100){
+                            sellCount -= 100;
+                        }
+
+                        buyCount += 100;
                     }
                 }
             }
